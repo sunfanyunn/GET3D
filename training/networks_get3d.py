@@ -537,6 +537,7 @@ class DMTETSynthesisNetwork(torch.nn.Module):
         return img, gen_camera, mask_pyramid, sdf_reg_loss, render_return_value
 
 
+
 @persistence.persistent_class
 class GeneratorDMTETMesh(torch.nn.Module):
     def __init__(
@@ -735,3 +736,27 @@ class GeneratorDMTETMesh(torch.nn.Module):
             ws_geo=ws_geo,
         )
         return img
+
+    def my_forward(self, ws, camera):
+        truncation_cutoff=None
+        truncation_psi=0.7
+        update_geo=True
+        update_emas=False
+        generate_no_light=True
+        generate_txture_map=True
+
+        ws, ws_geo = ws[:, :1, :], ws[:, 1:, :]
+
+        ws = ws.repeat([1, 9, 1])
+        ws_geo = ws_geo.repeat([1, 22, 1])
+        ws_back = None
+
+        tmp_img, mask, sdf, deformation, v_deformed, mesh_v, mesh_f, gen_camera, img_wo_light, mask_pyramid, tex_hard_mask, \
+        sdf_reg_loss, render_return_value = self.synthesis.generate(
+            ws, update_emas=update_emas, camera=camera,
+            update_geo=update_geo, ws_geo=ws_geo,
+            ws_back=ws_back,
+            generate_no_light=generate_no_light,
+            generate_txture_map=generate_txture_map,
+            noise_mode='const')
+        return tmp_img, gen_camera
